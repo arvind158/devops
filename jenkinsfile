@@ -1,0 +1,33 @@
+node{
+ def mavenHome=tool name:"maven3.8.2"
+ stage('checkoutcode')
+ {
+ git branch: 'development', credentialsId: 'c7feba68-1e03-4f91-be62-215c24c95bee', url: 'https://github.com/arvind158/devops.git'
+ }
+ stage('build')
+ {
+ sh "${mavenHome}/bin/mvn clean package" 
+ }
+ stage('sonarqubereport')
+ {
+ sh "${mavenHome}/bin/mvn sonar:sonar"  
+ }
+ stage('nexus')
+ {
+ sh "${mavenHome}/bin/mvn clean deploy"
+ } 
+ stage('deploytotomcat')
+ {
+ 
+ sshagent(['e81903a8-34a5-459e-9732-71308317493d']) {
+  sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.233.62.178:/opt/apache-tomcat-9.0.52/webapps/"
+}
+ }
+ stage('sendemail')
+{
+emailext body: '''build is over
+Thanks''', subject: 'build over', to: 'arvind_kumar158@yahoo.com'
+}
+
+
+}
